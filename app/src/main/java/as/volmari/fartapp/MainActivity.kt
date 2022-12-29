@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalPagerApi::class)
+
 package `as`.volmari.fartapp
 
 import `as`.volmari.fartapp.ui.theme.FartAppTheme
@@ -17,26 +19,32 @@ import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.rememberPagerState
 
 class MainActivity : ComponentActivity() {
 
     var farts: List<MediaPlayer> = listOf()
+    private val airhorn by lazy {
+        MediaPlayer.create(this, R.raw.instantrapairhorn)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         farts = (1..8).map {
             resources.getIdentifier("fart_0$it", "raw", packageName)
         }.map {
-            MediaPlayer.create(this, it).also {
-                it.setOnPreparedListener {
-                    Log.w("MediaPlayer", "setOnPreparedListener: ${it.audioSessionId}")
+            MediaPlayer.create(this, it).apply {
+                setOnPreparedListener {
+                    Log.w("MediaPlayer", "setOnPreparedListener: $audioSessionId")
 
                 }
-                it.setOnErrorListener { mediaPlayer, i, i2 ->
+                setOnErrorListener { _, i, i2 ->
                     Log.w("MediaPlayer", "setOnErrorListener: $i, $i2")
                     false
                 }
-                it.setOnInfoListener { mediaPlayer, i, i2 ->
+                setOnInfoListener { _, i, i2 ->
                     Log.w("MediaPlayer", "setOnInfoListener: $i, $i2")
                     false
                 }
@@ -49,8 +57,12 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Poop {
-                        playFart()
+                    val pagerState = rememberPagerState()
+                    HorizontalPager(count = 2, state = pagerState) { page ->
+                        when (page) {
+                            0 -> Poop { playFart() }
+                            1 -> Airhorn { playAirhorn() }
+                        }
                     }
                 }
             }
@@ -61,6 +73,14 @@ class MainActivity : ComponentActivity() {
         val fart = farts.random()
         fart.start()
     }
+
+    private fun playAirhorn() {
+        if (airhorn.isPlaying) {
+            airhorn.stop()
+            airhorn.prepare()
+        }
+        airhorn.start()
+    }
 }
 
 @Composable
@@ -70,6 +90,18 @@ fun Poop(click: () -> Unit = {}) {
             Image(
                 painter = painterResource(id = R.drawable.noto_emoji_kitkat_1f4a9),
                 contentDescription = "poo",
+            )
+        }
+    }
+}
+
+@Composable
+fun Airhorn(click: () -> Unit = {}) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Button(onClick = click, modifier = Modifier.align(Center)) {
+            Image(
+                painter = painterResource(id = R.drawable.airhorn),
+                contentDescription = "airhorn",
             )
         }
     }
