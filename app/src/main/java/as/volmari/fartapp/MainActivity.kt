@@ -3,6 +3,7 @@ package `as`.volmari.fartapp
 import `as`.volmari.fartapp.ui.theme.FartAppTheme
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -16,13 +17,31 @@ import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import kotlin.random.Random
-import kotlin.random.nextInt
 
 class MainActivity : ComponentActivity() {
 
+    var farts: List<MediaPlayer> = listOf()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        farts = (1..8).map {
+            resources.getIdentifier("fart_0$it", "raw", packageName)
+        }.map {
+            MediaPlayer.create(this, it).also {
+                it.setOnPreparedListener {
+                    Log.w("MediaPlayer", "setOnPreparedListener: ${it.audioSessionId}")
+
+                }
+                it.setOnErrorListener { mediaPlayer, i, i2 ->
+                    Log.w("MediaPlayer", "setOnErrorListener: $i, $i2")
+                    false
+                }
+                it.setOnInfoListener { mediaPlayer, i, i2 ->
+                    Log.w("MediaPlayer", "setOnInfoListener: $i, $i2")
+                    false
+                }
+            }
+        }
         setContent {
             FartAppTheme {
                 // A surface container using the 'background' color from the theme
@@ -38,18 +57,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun playFart() {
-        val fart = when(Random.nextInt(1..4)) {
-                1 -> R.raw.fart_01
-                2 -> R.raw.fart_02
-                3 -> R.raw.fart_03
-                4 -> R.raw.fart_04
-            else -> R.raw.fart_01
-        }
-        MediaPlayer.create(this, fart).apply {
-            this.setOnCompletionListener { this.release() }
-            start()
-        }
+    private fun playFart() {
+        val fart = farts.random()
+        fart.start()
     }
 }
 
